@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"strings"
 
+	"github.com/gookit/color"
 	"github.com/jesseduffield/gocui"
 	"github.com/jesseduffield/lazygit/pkg/commands/git_commands"
 	"github.com/jesseduffield/lazygit/pkg/commands/models"
@@ -253,7 +254,7 @@ func coloredStateText(state string) string {
 	if icons.IsIconEnabled() {
 		return fmt.Sprintf("%s%s%s",
 			presentation.WithPrColor(state, "", false),
-			presentation.WithPrColor(state, style.FgWhite.Sprint(stateText(state)), true),
+			presentation.WithPrColor(state, color.RGB(0xFF, 0xFF, 0xFF, false).Sprint(stateText(state)), true),
 			presentation.WithPrColor(state, "", false))
 	}
 
