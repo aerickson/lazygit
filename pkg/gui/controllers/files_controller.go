@@ -1544,7 +1544,7 @@ func (self *FilesController) onClickMain(opts gocui.ViewMouseBindingOpts) error 
 }
 
 func (self *FilesController) fetch() error {
-	return self.c.WithWaitingStatus(self.c.Tr.FetchingStatus, func(task gocui.Task) error {
+	self.c.Helpers().AppStatus.WithInterruptibleWaitingStatus(self.c.Tr.FetchingStatus, func(task gocui.Task) error {
 		self.c.LogAction("Fetch")
 		err := self.c.Git().Sync.Fetch(task)
 
@@ -1554,6 +1554,7 @@ func (self *FilesController) fetch() error {
 
 		return self.c.Helpers().BranchesHelper.PostFetchRefresh(err, false)
 	})
+	return nil
 }
 
 // Couldn't think of a better term than 'normalised'. Alas.

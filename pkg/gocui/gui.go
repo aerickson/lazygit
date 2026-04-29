@@ -672,6 +672,17 @@ func (g *Gui) HasActiveWorkers() bool {
 	return g.taskManager.HasActiveWorkers()
 }
 
+// OnInterruptibleWorker is like OnWorker but does not count toward
+// HasActiveWorkers, so it won't block quit with the "operation in progress"
+// dialog. Use for background operations that are safe to interrupt (e.g. fetch).
+func (g *Gui) OnInterruptibleWorker(f func(Task) error) {
+	task := g.NewTask()
+	go func() {
+		g.onWorkerAux(f, task)
+		task.Done()
+	}()
+}
+
 func (g *Gui) onWorkerAux(f func(Task) error, task Task) {
 	panicking := true
 	defer func() {

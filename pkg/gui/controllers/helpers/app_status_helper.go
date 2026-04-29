@@ -65,6 +65,15 @@ func (self *AppStatusHelper) WithWaitingStatus(message string, f func(gocui.Task
 	})
 }
 
+// WithInterruptibleWaitingStatus is like WithWaitingStatus but the operation
+// is not counted toward the "operation in progress" quit dialog.
+// Use for background operations that are safe to interrupt (e.g. fetch).
+func (self *AppStatusHelper) WithInterruptibleWaitingStatus(message string, f func(gocui.Task) error) {
+	self.c.GocuiGui().OnInterruptibleWorker(func(task gocui.Task) error {
+		return self.WithWaitingStatusImpl(message, f, task)
+	})
+}
+
 func (self *AppStatusHelper) WithWaitingStatusImpl(message string, f func(gocui.Task) error, task gocui.Task) error {
 	// A waiting status means lazygit is driving a git operation itself (often
 	// one that internally runs a rebase and continues it). Pause the background
