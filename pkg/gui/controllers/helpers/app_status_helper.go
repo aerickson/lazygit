@@ -110,7 +110,7 @@ func (self *AppStatusHelper) GetStatusString() string {
 }
 
 func (self *AppStatusHelper) renderAppStatus() {
-	self.c.OnWorker(func(_ gocui.Task) error {
+	self.c.GocuiGui().OnInterruptibleWorker(func(_ gocui.Task) error {
 		ticker := time.NewTicker(time.Millisecond * time.Duration(self.c.UserConfig().Gui.Spinner.Rate))
 		defer ticker.Stop()
 		prevAppStatus := ""

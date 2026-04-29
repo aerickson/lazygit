@@ -198,7 +198,7 @@ func (self *BackgroundRoutineMgr) goEvery(interval time.Duration, stop chan stru
 			if self.backgroundRefreshesPaused() {
 				return
 			}
-			self.gui.c.OnWorker(func(gocui.Task) error {
+			self.gui.c.GocuiGui().OnInterruptibleWorker(func(gocui.Task) error {
 				_ = function(retriggered)
 				done <- struct{}{}
 				return nil
