@@ -40,6 +40,23 @@ func (self *TaskManager) addIdleListener(c chan struct{}) {
 	self.idleListeners = append(self.idleListeners, c)
 }
 
+func (self *TaskManager) AddIdleListener(c chan struct{}) {
+	self.mutex.Lock()
+	defer self.mutex.Unlock()
+	self.idleListeners = append(self.idleListeners, c)
+}
+
+func (self *TaskManager) IsBusy() bool {
+	self.mutex.Lock()
+	defer self.mutex.Unlock()
+	for _, task := range self.tasks {
+		if task.isBusy() {
+			return true
+		}
+	}
+	return false
+}
+
 func (self *TaskManager) withMutex(f func()) {
 	self.mutex.Lock()
 	defer self.mutex.Unlock()

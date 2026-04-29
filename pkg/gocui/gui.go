@@ -280,7 +280,14 @@ func (g *Gui) NewTask() *TaskImpl {
 // integration tests which can wait for the program to be idle before taking
 // the next step in the test.
 func (g *Gui) AddIdleListener(c chan struct{}) {
-	g.taskManager.addIdleListener(c)
+	g.taskManager.AddIdleListener(c)
+}
+
+// IsBusy returns true if there are any active tasks (worker goroutines or
+// pending UI-thread updates). Use AddIdleListener to be notified when the
+// program transitions from busy to idle.
+func (g *Gui) IsBusy() bool {
+	return g.taskManager.IsBusy()
 }
 
 // Close finalizes the library. It should be called after a successful

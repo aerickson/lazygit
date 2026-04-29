@@ -16,7 +16,6 @@ type InlineStatusHelper struct {
 	windowHelper             *WindowHelper
 	contextsWithInlineStatus map[types.ContextKey]*inlineStatusInfo
 	mutex                    deadlock.Mutex
-	activeCount              int
 }
 
 func NewInlineStatusHelper(c *HelperCommon, windowHelper *WindowHelper) *InlineStatusHelper {
@@ -68,20 +67,8 @@ func (self *InlineStatusHelper) WithInlineStatus(opts InlineStatusOpts, f func(g
 	view := context.GetView()
 	visible := view.Visible && self.windowHelper.TopViewInWindow(context.GetWindowName(), false) == view
 
-	self.mutex.Lock()
-	self.activeCount++
-	self.mutex.Unlock()
-
-	done := func() {
-		self.mutex.Lock()
-		self.activeCount--
-		self.mutex.Unlock()
-	}
-
 	if visible && context.IsItemVisible(opts.Item) {
 		self.c.OnWorker(func(task gocui.Task) error {
-			defer done()
-
 			// An inline status is just a waiting status rendered on the item
 			// rather than in the bottom line, so it gets the same treatment:
 			// pause the background routines while we drive the operation. (The
@@ -98,7 +85,6 @@ func (self *InlineStatusHelper) WithInlineStatus(opts InlineStatusOpts, f func(g
 	} else {
 		message := presentation.ItemOperationToString(opts.Operation, self.c.Tr)
 		_ = self.c.WithWaitingStatus(message, func(t gocui.Task) error {
-			defer done()
 			// We still need to set the item operation, because it might be used
 			// for other (non-presentation) purposes
 			self.c.State().SetItemOperation(opts.Item, opts.Operation)
@@ -107,25 +93,6 @@ func (self *InlineStatusHelper) WithInlineStatus(opts InlineStatusOpts, f func(g
 			return f(t)
 		})
 	}
-}
-
-func (self *InlineStatusHelper) AnyActive() bool {
-	self.mutex.Lock()
-	defer self.mutex.Unlock()
-	return self.activeCount > 0
-}
-
-// NotifyWhenDone calls cb once all in-flight inline-status operations have finished.
-func (self *InlineStatusHelper) NotifyWhenDone(cb func()) {
-	go utils.Safe(func() {
-		for {
-			time.Sleep(50 * time.Millisecond)
-			if !self.AnyActive() {
-				cb()
-				return
-			}
-		}
-	})
 }
 
 func (self *InlineStatusHelper) start(opts InlineStatusOpts) {

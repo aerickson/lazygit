@@ -4,6 +4,7 @@ import (
 	"github.com/jesseduffield/lazygit/pkg/gocui"
 	"github.com/jesseduffield/lazygit/pkg/gui/context"
 	"github.com/jesseduffield/lazygit/pkg/gui/types"
+	"github.com/jesseduffield/lazygit/pkg/utils"
 )
 
 type QuitActions struct {
@@ -25,7 +26,7 @@ func (self *QuitActions) quitAux() error {
 		return self.confirmQuitDuringUpdate()
 	}
 
-	if self.c.Helpers().InlineStatus.AnyActive() {
+	if self.c.GocuiGui().IsBusy() {
 		return self.confirmQuitDuringBackgroundOp()
 	}
 
@@ -45,7 +46,10 @@ func (self *QuitActions) confirmQuitDuringBackgroundOp() error {
 	// when the user explicitly closes/cancels so the watcher knows to stand down.
 	cancelled := false
 
-	self.c.Helpers().InlineStatus.NotifyWhenDone(func() {
+	idle := make(chan struct{}, 1)
+	self.c.GocuiGui().AddIdleListener(idle)
+	go utils.Safe(func() {
+		<-idle
 		self.c.OnUIThread(func() error {
 			if cancelled {
 				return nil
