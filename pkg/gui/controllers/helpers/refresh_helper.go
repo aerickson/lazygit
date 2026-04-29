@@ -684,7 +684,7 @@ func (self *RefreshHelper) refreshBranches(refreshWorktrees bool, keepBranchSele
 		self.c.Model().Branches,
 		loadBehindCounts,
 		func(f func() error) {
-			self.c.OnWorker(func(_ gocui.Task) error {
+			self.c.GocuiGui().OnInterruptibleWorker(func(_ gocui.Task) error {
 				return f()
 			})
 		},
