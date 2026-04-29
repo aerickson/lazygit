@@ -657,11 +657,19 @@ func (g *Gui) UpdateContentOnly(f func(*Gui) error) {
 // background goroutines where you wouldn't want lazygit to be considered busy
 // (i.e. when you wouldn't want a loader to be shown to the user)
 func (g *Gui) OnWorker(f func(Task) error) {
+	g.taskManager.incrWorker()
 	task := g.NewTask()
 	go func() {
+		defer g.taskManager.decrWorker()
 		g.onWorkerAux(f, task)
 		task.Done()
 	}()
+}
+
+// HasActiveWorkers returns true if any OnWorker goroutines are currently
+// running. Unlike IsBusy, this excludes transient UI-event tasks.
+func (g *Gui) HasActiveWorkers() bool {
+	return g.taskManager.HasActiveWorkers()
 }
 
 func (g *Gui) onWorkerAux(f func(Task) error, task Task) {

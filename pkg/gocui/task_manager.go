@@ -11,6 +11,8 @@ type TaskManager struct {
 	tasks         map[int]Task
 	// auto-incrementing id for new tasks
 	nextId int
+	// counts goroutines spawned via OnWorker (excludes transient UI-event tasks)
+	workerCount int
 
 	mutex sync.Mutex
 }
@@ -38,6 +40,24 @@ func (self *TaskManager) NewTask() *TaskImpl {
 
 func (self *TaskManager) addIdleListener(c chan struct{}) {
 	self.idleListeners = append(self.idleListeners, c)
+}
+
+func (self *TaskManager) incrWorker() {
+	self.mutex.Lock()
+	self.workerCount++
+	self.mutex.Unlock()
+}
+
+func (self *TaskManager) decrWorker() {
+	self.mutex.Lock()
+	self.workerCount--
+	self.mutex.Unlock()
+}
+
+func (self *TaskManager) HasActiveWorkers() bool {
+	self.mutex.Lock()
+	defer self.mutex.Unlock()
+	return self.workerCount > 0
 }
 
 func (self *TaskManager) AddIdleListener(c chan struct{}) {

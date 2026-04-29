@@ -1,6 +1,8 @@
 package controllers
 
 import (
+	"time"
+
 	"github.com/jesseduffield/lazygit/pkg/gocui"
 	"github.com/jesseduffield/lazygit/pkg/gui/context"
 	"github.com/jesseduffield/lazygit/pkg/gui/types"
@@ -26,7 +28,7 @@ func (self *QuitActions) quitAux() error {
 		return self.confirmQuitDuringUpdate()
 	}
 
-	if self.c.GocuiGui().IsBusy() {
+	if self.c.GocuiGui().HasActiveWorkers() {
 		return self.confirmQuitDuringBackgroundOp()
 	}
 
@@ -46,10 +48,10 @@ func (self *QuitActions) confirmQuitDuringBackgroundOp() error {
 	// when the user explicitly closes/cancels so the watcher knows to stand down.
 	cancelled := false
 
-	idle := make(chan struct{}, 1)
-	self.c.GocuiGui().AddIdleListener(idle)
 	go utils.Safe(func() {
-		<-idle
+		for self.c.GocuiGui().HasActiveWorkers() {
+			time.Sleep(100 * time.Millisecond)
+		}
 		self.c.OnUIThread(func() error {
 			if cancelled {
 				return nil
