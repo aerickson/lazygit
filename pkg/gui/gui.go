@@ -12,6 +12,7 @@ import (
 	"sort"
 	"strings"
 	"sync"
+	"sync/atomic"
 	"time"
 
 	"github.com/jesseduffield/lazycore/pkg/boxlayout"
@@ -147,6 +148,9 @@ type Gui struct {
 	integrationTest integrationTypes.IntegrationTest
 
 	afterLayoutFuncs chan func() error
+
+	// counts goroutines running via onWorker (excludes interruptible workers)
+	workerCount atomic.Int32
 }
 
 type StateAccessor struct {
@@ -1196,7 +1200,15 @@ func (gui *Gui) onUIThreadContentOnly(f func() error) {
 }
 
 func (gui *Gui) onWorker(f func(gocui.Task) error) {
-	gui.g.OnWorker(f)
+	gui.workerCount.Add(1)
+	gui.g.OnWorker(func(t gocui.Task) error {
+		defer gui.workerCount.Add(-1)
+		return f(t)
+	})
+}
+
+func (gui *Gui) HasActiveWorkers() bool {
+	return gui.workerCount.Load() > 0
 }
 
 func (gui *Gui) getWindowDimensions(informationStr string, appStatus string) map[string]boxlayout.Dimensions {

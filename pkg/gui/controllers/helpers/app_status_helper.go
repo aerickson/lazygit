@@ -69,7 +69,7 @@ func (self *AppStatusHelper) WithWaitingStatus(message string, f func(gocui.Task
 // is not counted toward the "operation in progress" quit dialog.
 // Use for background operations that are safe to interrupt (e.g. fetch).
 func (self *AppStatusHelper) WithInterruptibleWaitingStatus(message string, f func(gocui.Task) error) {
-	self.c.GocuiGui().OnInterruptibleWorker(func(task gocui.Task) error {
+	self.c.GocuiGui().OnWorker(func(task gocui.Task) error {
 		return self.WithWaitingStatusImpl(message, f, task)
 	})
 }
@@ -110,7 +110,7 @@ func (self *AppStatusHelper) GetStatusString() string {
 }
 
 func (self *AppStatusHelper) renderAppStatus() {
-	self.c.GocuiGui().OnInterruptibleWorker(func(_ gocui.Task) error {
+	self.c.GocuiGui().OnWorker(func(_ gocui.Task) error {
 		ticker := time.NewTicker(time.Millisecond * time.Duration(self.c.UserConfig().Gui.Spinner.Rate))
 		defer ticker.Stop()
 		prevAppStatus := ""

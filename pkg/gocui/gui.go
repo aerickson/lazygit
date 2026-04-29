@@ -280,14 +280,7 @@ func (g *Gui) NewTask() *TaskImpl {
 // integration tests which can wait for the program to be idle before taking
 // the next step in the test.
 func (g *Gui) AddIdleListener(c chan struct{}) {
-	g.taskManager.AddIdleListener(c)
-}
-
-// IsBusy returns true if there are any active tasks (worker goroutines or
-// pending UI-thread updates). Use AddIdleListener to be notified when the
-// program transitions from busy to idle.
-func (g *Gui) IsBusy() bool {
-	return g.taskManager.IsBusy()
+	g.taskManager.addIdleListener(c)
 }
 
 // Close finalizes the library. It should be called after a successful
@@ -657,25 +650,6 @@ func (g *Gui) UpdateContentOnly(f func(*Gui) error) {
 // background goroutines where you wouldn't want lazygit to be considered busy
 // (i.e. when you wouldn't want a loader to be shown to the user)
 func (g *Gui) OnWorker(f func(Task) error) {
-	g.taskManager.incrWorker()
-	task := g.NewTask()
-	go func() {
-		defer g.taskManager.decrWorker()
-		g.onWorkerAux(f, task)
-		task.Done()
-	}()
-}
-
-// HasActiveWorkers returns true if any OnWorker goroutines are currently
-// running. Unlike IsBusy, this excludes transient UI-event tasks.
-func (g *Gui) HasActiveWorkers() bool {
-	return g.taskManager.HasActiveWorkers()
-}
-
-// OnInterruptibleWorker is like OnWorker but does not count toward
-// HasActiveWorkers, so it won't block quit with the "operation in progress"
-// dialog. Use for background operations that are safe to interrupt (e.g. fetch).
-func (g *Gui) OnInterruptibleWorker(f func(Task) error) {
 	task := g.NewTask()
 	go func() {
 		g.onWorkerAux(f, task)

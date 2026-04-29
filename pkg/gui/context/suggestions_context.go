@@ -33,7 +33,7 @@ func NewSuggestionsContext(
 	c *ContextCommon,
 ) *SuggestionsContext {
 	state := &SuggestionsContextState{
-		AsyncHandler: tasks.NewAsyncHandler(c.GocuiGui().OnInterruptibleWorker),
+		AsyncHandler: tasks.NewAsyncHandler(c.GocuiGui().OnWorker),
 	}
 	getModel := func() []*types.Suggestion {
 		return state.Suggestions

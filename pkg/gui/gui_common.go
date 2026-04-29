@@ -132,6 +132,10 @@ func (self *guiCommon) OnWorker(f func(gocui.Task) error) {
 	self.gui.onWorker(f)
 }
 
+func (self *guiCommon) HasActiveWorkers() bool {
+	return self.gui.HasActiveWorkers()
+}
+
 func (self *guiCommon) RenderToMainViews(opts types.RefreshMainOpts) {
 	self.gui.refreshMainViews(opts)
 }

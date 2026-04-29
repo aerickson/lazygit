@@ -28,7 +28,7 @@ func (self *QuitActions) quitAux() error {
 		return self.confirmQuitDuringUpdate()
 	}
 
-	if self.c.GocuiGui().HasActiveWorkers() {
+	if self.c.HasActiveWorkers() {
 		return self.confirmQuitDuringBackgroundOp()
 	}
 
@@ -49,7 +49,7 @@ func (self *QuitActions) confirmQuitDuringBackgroundOp() error {
 	cancelled := false
 
 	go utils.Safe(func() {
-		for self.c.GocuiGui().HasActiveWorkers() {
+		for self.c.HasActiveWorkers() {
 			time.Sleep(100 * time.Millisecond)
 		}
 		self.c.OnUIThread(func() error {
