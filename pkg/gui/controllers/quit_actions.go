@@ -1,6 +1,7 @@
 package controllers
 
 import (
+	"sync/atomic"
 	"time"
 
 	"github.com/jesseduffield/lazygit/pkg/gocui"
@@ -46,14 +47,14 @@ func (self *QuitActions) confirmQuitDuringBackgroundOp() error {
 	// Always register the watcher: if the user does nothing and the op finishes
 	// while the dialog is open, we quit automatically. cancelled is set to true
 	// when the user explicitly closes/cancels so the watcher knows to stand down.
-	cancelled := false
+	var cancelled atomic.Bool
 
 	go utils.Safe(func() {
 		for self.c.HasActiveWorkers() {
 			time.Sleep(100 * time.Millisecond)
 		}
 		self.c.OnUIThread(func() error {
-			if cancelled {
+			if cancelled.Load() {
 				return nil
 			}
 			return self.Quit()
@@ -64,11 +65,11 @@ func (self *QuitActions) confirmQuitDuringBackgroundOp() error {
 		Title:  self.c.Tr.ConfirmQuitDuringBackgroundOpTitle,
 		Prompt: self.c.Tr.ConfirmQuitDuringBackgroundOp,
 		HandleConfirm: func() error {
-			cancelled = true
+			cancelled.Store(true)
 			return gocui.ErrQuit
 		},
 		HandleClose: func() error {
-			cancelled = true
+			cancelled.Store(true)
 			return nil
 		},
 	})
