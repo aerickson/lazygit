@@ -12,7 +12,6 @@ import (
 	"sort"
 	"strings"
 	"sync"
-	"sync/atomic"
 	"time"
 
 	"github.com/jesseduffield/lazycore/pkg/boxlayout"
@@ -149,8 +148,11 @@ type Gui struct {
 
 	afterLayoutFuncs chan func() error
 
-	// counts goroutines running via onWorker (excludes interruptible workers)
-	workerCount atomic.Int32
+	// workerMu protects workerCount; workerIdle is broadcast when it reaches zero.
+	// Excludes interruptible workers (those launched via OnInterruptibleWorker).
+	workerMu    sync.Mutex
+	workerCount int
+	workerIdle  *sync.Cond
 }
 
 type StateAccessor struct {
@@ -780,6 +782,7 @@ func NewGui(
 
 		itemOperations: make(map[string]types.ItemOperation),
 	}
+	gui.workerIdle = sync.NewCond(&gui.workerMu)
 
 	gui.PopupHandler = popup.NewPopupHandler(
 		cmn,
@@ -1200,15 +1203,35 @@ func (gui *Gui) onUIThreadContentOnly(f func() error) {
 }
 
 func (gui *Gui) onWorker(f func(gocui.Task) error) {
-	gui.workerCount.Add(1)
+	gui.workerMu.Lock()
+	gui.workerCount++
+	gui.workerMu.Unlock()
+
 	gui.g.OnWorker(func(t gocui.Task) error {
-		defer gui.workerCount.Add(-1)
+		defer func() {
+			gui.workerMu.Lock()
+			gui.workerCount--
+			if gui.workerCount == 0 {
+				gui.workerIdle.Broadcast()
+			}
+			gui.workerMu.Unlock()
+		}()
 		return f(t)
 	})
 }
 
 func (gui *Gui) HasActiveWorkers() bool {
-	return gui.workerCount.Load() > 0
+	gui.workerMu.Lock()
+	defer gui.workerMu.Unlock()
+	return gui.workerCount > 0
+}
+
+func (gui *Gui) WaitForWorkersIdle() {
+	gui.workerMu.Lock()
+	defer gui.workerMu.Unlock()
+	for gui.workerCount > 0 {
+		gui.workerIdle.Wait()
+	}
 }
 
 func (gui *Gui) getWindowDimensions(informationStr string, appStatus string) map[string]boxlayout.Dimensions {

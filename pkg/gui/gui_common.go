@@ -132,8 +132,19 @@ func (self *guiCommon) OnWorker(f func(gocui.Task) error) {
 	self.gui.onWorker(f)
 }
 
+// OnInterruptibleWorker runs f in a goroutine without counting it toward the
+// "operation in progress" quit dialog. Use for background ops that are safe
+// to abandon (e.g. fetch, display-only refreshes).
+func (self *guiCommon) OnInterruptibleWorker(f func(gocui.Task) error) {
+	self.gui.g.OnWorker(f)
+}
+
 func (self *guiCommon) HasActiveWorkers() bool {
 	return self.gui.HasActiveWorkers()
+}
+
+func (self *guiCommon) WaitForWorkersIdle() {
+	self.gui.WaitForWorkersIdle()
 }
 
 func (self *guiCommon) RenderToMainViews(opts types.RefreshMainOpts) {

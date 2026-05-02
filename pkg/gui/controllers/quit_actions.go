@@ -2,7 +2,6 @@ package controllers
 
 import (
 	"sync/atomic"
-	"time"
 
 	"github.com/jesseduffield/lazygit/pkg/gocui"
 	"github.com/jesseduffield/lazygit/pkg/gui/context"
@@ -50,9 +49,7 @@ func (self *QuitActions) confirmQuitDuringBackgroundOp() error {
 	var cancelled atomic.Bool
 
 	go utils.Safe(func() {
-		for self.c.HasActiveWorkers() {
-			time.Sleep(100 * time.Millisecond)
-		}
+		self.c.WaitForWorkersIdle()
 		self.c.OnUIThread(func() error {
 			if cancelled.Load() {
 				return nil
