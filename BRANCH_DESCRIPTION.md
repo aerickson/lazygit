@@ -55,6 +55,14 @@ Remaining questions before an upstream PR:
 - Integration test coverage (lazygit's integration tests drive a real git
   process; a slow-remote test might be feasible).
 
+## Building
+
+```sh
+make build       # produces ./lazygit (debug symbols, no optimizations)
+make build-dev   # same + embeds commit/date/buildSource, codesigns the binary
+make install     # go install (puts binary in $GOPATH/bin)
+```
+
 ## Manual test scripts
 
 Two shell scripts in `scripts/` set up throwaway repos for manual testing.
