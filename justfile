@@ -5,6 +5,13 @@ default:
 build:
     go build -gcflags='all=-N -l'
 
+build-dev:
+    go build -gcflags='all=-N -l' \
+        -ldflags="-X main.commit=$(git rev-parse --short HEAD) \
+                  -X main.buildDate=$(date -u +%Y-%m-%dT%H:%M:%SZ) \
+                  -X main.buildSource=dev-aerickson"
+    codesign -s - lazygit
+
 install:
     go install
 
