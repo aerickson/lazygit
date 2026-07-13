@@ -15,6 +15,13 @@ build-dev:
 install:
     go install
 
+# Build and copy the binary to the next-release path.
+deploy-next: build
+    cp lazygit ~/bin/lazygit-next
+
+promote-next:
+    cp ~/bin/lazygit-next ~/bin/lazygit
+
 run: build
     ./lazygit
 
