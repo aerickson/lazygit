@@ -22,6 +22,10 @@ deploy-next: build
 promote-next:
     cp ~/bin/lazygit-next ~/bin/lazygit
 
+# Show installed binary versions and their distance from this repository.
+deploy-inspect:
+    scripts/deploy_inspect.sh
+
 run: build
     ./lazygit
 
