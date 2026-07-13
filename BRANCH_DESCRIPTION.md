@@ -58,9 +58,9 @@ Remaining questions before an upstream PR:
 ## Building
 
 ```sh
-make build       # produces ./lazygit (debug symbols, no optimizations)
-make build-dev   # same + embeds commit/date/buildSource, codesigns the binary
-make install     # go install (puts binary in $GOPATH/bin)
+just build       # produces ./lazygit (debug symbols, no optimizations)
+just build-dev   # same + embeds commit/date/buildSource, codesigns the binary
+just install     # go install (puts binary in $GOPATH/bin)
 ```
 
 ## Manual test scripts
