@@ -66,6 +66,7 @@ func (self *InlineStatusHelper) WithInlineStatus(opts InlineStatusOpts, f func(g
 	context := self.c.ContextForKey(opts.ContextKey).(types.IListContext)
 	view := context.GetView()
 	visible := view.Visible && self.windowHelper.TopViewInWindow(context.GetWindowName(), false) == view
+
 	if visible && context.IsItemVisible(opts.Item) {
 		self.c.OnWorker(func(task gocui.Task) error {
 			// An inline status is just a waiting status rendered on the item

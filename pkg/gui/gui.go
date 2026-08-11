@@ -147,6 +147,12 @@ type Gui struct {
 	integrationTest integrationTypes.IntegrationTest
 
 	afterLayoutFuncs chan func() error
+
+	// workerMu protects workerCount; workerIdle is broadcast when it reaches zero.
+	// Excludes interruptible workers (those launched via OnInterruptibleWorker).
+	workerMu    sync.Mutex
+	workerCount int
+	workerIdle  *sync.Cond
 }
 
 type StateAccessor struct {
@@ -776,6 +782,7 @@ func NewGui(
 
 		itemOperations: make(map[string]types.ItemOperation),
 	}
+	gui.workerIdle = sync.NewCond(&gui.workerMu)
 
 	gui.PopupHandler = popup.NewPopupHandler(
 		cmn,
@@ -1196,7 +1203,35 @@ func (gui *Gui) onUIThreadContentOnly(f func() error) {
 }
 
 func (gui *Gui) onWorker(f func(gocui.Task) error) {
-	gui.g.OnWorker(f)
+	gui.workerMu.Lock()
+	gui.workerCount++
+	gui.workerMu.Unlock()
+
+	gui.g.OnWorker(func(t gocui.Task) error {
+		defer func() {
+			gui.workerMu.Lock()
+			gui.workerCount--
+			if gui.workerCount == 0 {
+				gui.workerIdle.Broadcast()
+			}
+			gui.workerMu.Unlock()
+		}()
+		return f(t)
+	})
+}
+
+func (gui *Gui) HasActiveWorkers() bool {
+	gui.workerMu.Lock()
+	defer gui.workerMu.Unlock()
+	return gui.workerCount > 0
+}
+
+func (gui *Gui) WaitForWorkersIdle() {
+	gui.workerMu.Lock()
+	defer gui.workerMu.Unlock()
+	for gui.workerCount > 0 {
+		gui.workerIdle.Wait()
+	}
 }
 
 func (gui *Gui) getWindowDimensions(informationStr string, appStatus string) map[string]boxlayout.Dimensions {

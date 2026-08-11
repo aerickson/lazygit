@@ -1,9 +1,12 @@
 package controllers
 
 import (
+	"sync/atomic"
+
 	"github.com/jesseduffield/lazygit/pkg/gocui"
 	"github.com/jesseduffield/lazygit/pkg/gui/context"
 	"github.com/jesseduffield/lazygit/pkg/gui/types"
+	"github.com/jesseduffield/lazygit/pkg/utils"
 )
 
 type QuitActions struct {
@@ -25,6 +28,10 @@ func (self *QuitActions) quitAux() error {
 		return self.confirmQuitDuringUpdate()
 	}
 
+	if self.c.HasActiveWorkers() {
+		return self.confirmQuitDuringBackgroundOp()
+	}
+
 	return self.c.ConfirmIf(self.c.UserConfig().ConfirmOnQuit,
 		types.ConfirmOpts{
 			Title:  "",
@@ -33,6 +40,38 @@ func (self *QuitActions) quitAux() error {
 				return gocui.ErrQuit
 			},
 		})
+}
+
+func (self *QuitActions) confirmQuitDuringBackgroundOp() error {
+	// Always register the watcher: if the user does nothing and the op finishes
+	// while the dialog is open, we quit automatically. cancelled is set to true
+	// when the user explicitly closes/cancels so the watcher knows to stand down.
+	var cancelled atomic.Bool
+
+	go utils.Safe(func() {
+		self.c.WaitForWorkersIdle()
+		self.c.OnUIThread(func() error {
+			if cancelled.Load() {
+				return nil
+			}
+			return self.Quit()
+		})
+	})
+
+	self.c.Confirm(types.ConfirmOpts{
+		Title:  self.c.Tr.ConfirmQuitDuringBackgroundOpTitle,
+		Prompt: self.c.Tr.ConfirmQuitDuringBackgroundOp,
+		HandleConfirm: func() error {
+			cancelled.Store(true)
+			return gocui.ErrQuit
+		},
+		HandleClose: func() error {
+			cancelled.Store(true)
+			return nil
+		},
+	})
+
+	return nil
 }
 
 func (self *QuitActions) confirmQuitDuringUpdate() error {
